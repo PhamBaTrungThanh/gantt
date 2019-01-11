@@ -295,8 +295,8 @@ export default class Gantt {
         this.make_grid_background();
         this.make_grid_rows();
         this.make_grid_header();
-        this.make_grid_ticks();
         this.make_grid_highlights();
+        this.make_grid_ticks();
     }
 
     make_grid_background() {
@@ -413,11 +413,11 @@ export default class Gantt {
     make_grid_highlights() {
         // highlight today's date
         if (this.view_is('Day')) {
-            const x =
-                date_utils.diff(date_utils.today(), this.gantt_start, 'hour') /
-                this.options.step *
-                this.options.column_width;
-            const y = 0;
+            // const x =
+            //     date_utils.diff(date_utils.today(), this.gantt_start, 'hour') /
+            //     this.options.step *
+            //     this.options.column_width;
+            // const y = 0;
 
             const width = this.options.column_width;
             const height =
@@ -425,15 +425,42 @@ export default class Gantt {
                     this.tasks.length +
                 this.options.header_height +
                 this.options.padding / 2;
+            let x = 0;
 
-            createSVG('rect', {
-                x,
-                y,
-                width,
-                height,
-                class: 'today-highlight',
-                append_to: this.layers.grid
-            });
+            for (let date of this.dates) {
+                let y = this.options.header_height + this.options.padding / 2;
+
+                let isToday = date.toString() == date_utils.today();
+                let isWeekend = date.getDay() == 0 || date.getDay() == 6;
+                let className;
+
+                if (isToday) {
+                    className = 'today-highlight';
+                    y = (this.options.header_height + this.options.padding) / 2; // This is so the day highlight doesn't extend into the months header
+                } else if (isWeekend) {
+                    className = 'weekend-highlight';
+                }
+
+                if (isToday || isWeekend) {
+                    createSVG('rect', {
+                        x,
+                        y,
+                        width,
+                        height,
+                        class: className,
+                        append_to: this.layers.grid
+                    });
+                }
+                x += this.options.column_width;
+            }
+            // createSVG('rect', {
+            //     x,
+            //     y,
+            //     width,
+            //     height,
+            //     class: 'today-highlight',
+            //     append_to: this.layers.grid
+            // });
         }
     }
 
