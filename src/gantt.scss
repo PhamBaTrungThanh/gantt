@@ -39,7 +39,10 @@ $handle-color: #ddd !default;
 		fill: $light-yellow;
 		opacity: 0.5;
 	}
-
+	.weekend-highlight {
+		opacity: 0.5;
+		fill: $bar-stroke;
+	}
 	.arrow {
 		fill: none;
 		stroke: $text-muted;
@@ -72,13 +75,16 @@ $handle-color: #ddd !default;
 		text-anchor: middle;
 		font-size: 12px;
 		font-weight: lighter;
+		pointer-events: none;
 
 		&.big {
 			fill: $text-light;
 			text-anchor: start;
 		}
 	}
-
+	&.disable-edit .handle-group {
+		display: none;
+	}
 	.handle {
 		fill: $handle-color;
 		cursor: ew-resize;

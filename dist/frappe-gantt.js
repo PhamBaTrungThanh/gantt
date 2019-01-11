@@ -1048,7 +1048,10 @@ class Gantt {
             date_format: 'YYYY-MM-DD',
             popup_trigger: 'click',
             custom_popup_html: null,
-            language: 'en'
+            language: 'en',
+            wrap: false,
+            disable_edit: false,
+            show_weekends: false
         };
         this.options = Object.assign({}, default_options, options);
     }
@@ -1185,53 +1188,70 @@ class Gantt {
 
         this.gantt_start = date_utils.start_of(this.gantt_start, 'day');
         this.gantt_end = date_utils.start_of(this.gantt_end, 'day');
-
         // add date padding on both sides
-        if (this.view_is(['Quarter Day', 'Half Day'])) {
-            this.gantt_start = date_utils.add(this.gantt_start, -7, 'day');
-            this.gantt_end = date_utils.add(this.gantt_end, 7, 'day');
-        } else if (this.view_is('Month')) {
-            this.gantt_start = date_utils.start_of(this.gantt_start, 'year');
-            this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
-        } else if (this.view_is('Year')) {
-            this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
-            this.gantt_end = date_utils.add(this.gantt_end, 2, 'year');
+        if (this.options.wrap) {
+            this.gantt_start = date_utils.add(this.gantt_start, -1, 'day');
+            this.gantt_end = date_utils.add(this.gantt_end, 3, 'day');
         } else {
-            this.gantt_start = date_utils.add(this.gantt_start, -1, 'month');
-            this.gantt_end = date_utils.add(this.gantt_end, 1, 'month');
+            if (this.view_is(['Quarter Day', 'Half Day'])) {
+                this.gantt_start = date_utils.add(this.gantt_start, -7, 'day');
+                this.gantt_end = date_utils.add(this.gantt_end, 7, 'day');
+            } else if (this.view_is('Month')) {
+                this.gantt_start = date_utils.start_of(
+                    this.gantt_start,
+                    'year'
+                );
+                this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
+            } else if (this.view_is('Year')) {
+                this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
+                this.gantt_end = date_utils.add(this.gantt_end, 2, 'year');
+            } else {
+                this.gantt_start = date_utils.add(
+                    this.gantt_start,
+                    -1,
+                    'month'
+                );
+                this.gantt_end = date_utils.add(this.gantt_end, 1, 'month');
+            }
         }
     }
 
     setup_date_values() {
         this.dates = [];
-        let cur_date = null;
 
-        while (cur_date === null || cur_date < this.gantt_end) {
-            if (!cur_date) {
-                cur_date = date_utils.clone(this.gantt_start);
-            } else {
-                if (this.view_is('Year')) {
-                    cur_date = date_utils.add(cur_date, 1, 'year');
-                } else if (this.view_is('Month')) {
-                    cur_date = date_utils.add(cur_date, 1, 'month');
+        if (this.options.wrap_date === 'block' && this.view_is('Day')) {
+        } else {
+            let cur_date = null;
+            while (cur_date === null || cur_date < this.gantt_end) {
+                if (!cur_date) {
+                    cur_date = date_utils.clone(this.gantt_start);
                 } else {
-                    cur_date = date_utils.add(
-                        cur_date,
-                        this.options.step,
-                        'hour'
-                    );
+                    if (this.view_is('Year')) {
+                        cur_date = date_utils.add(cur_date, 1, 'year');
+                    } else if (this.view_is('Month')) {
+                        cur_date = date_utils.add(cur_date, 1, 'month');
+                    } else {
+                        cur_date = date_utils.add(
+                            cur_date,
+                            this.options.step,
+                            'hour'
+                        );
+                    }
                 }
+                this.dates.push(cur_date);
             }
-            this.dates.push(cur_date);
         }
     }
 
     bind_events() {
         this.bind_grid_click();
-        this.bind_bar_events();
+        if (!this.options.disable_edit) {
+            this.bind_bar_events();
+        }
     }
 
     render() {
+        this.setStyle();
         this.clear();
         this.setup_layers();
         this.make_grid();
@@ -1242,7 +1262,11 @@ class Gantt {
         this.set_width();
         this.set_scroll_position();
     }
-
+    setStyle() {
+        if (this.options.disable_edit) {
+            this.$svg.classList.add('disable-edit');
+        }
+    }
     setup_layers() {
         this.layers = {};
         const layers = ['grid', 'date', 'arrow', 'progress', 'bar', 'details'];
@@ -1259,8 +1283,12 @@ class Gantt {
         this.make_grid_background();
         this.make_grid_rows();
         this.make_grid_header();
-        this.make_grid_highlights();
         this.make_grid_ticks();
+        if (this.options.show_weekends) {
+            this.make_grid_highlights_with_weekends();
+        } else {
+            this.make_grid_highlights();
+        }
     }
 
     make_grid_background() {
@@ -1377,11 +1405,11 @@ class Gantt {
     make_grid_highlights() {
         // highlight today's date
         if (this.view_is('Day')) {
-            // const x =
-            //     date_utils.diff(date_utils.today(), this.gantt_start, 'hour') /
-            //     this.options.step *
-            //     this.options.column_width;
-            // const y = 0;
+            const x =
+                date_utils.diff(date_utils.today(), this.gantt_start, 'hour') /
+                this.options.step *
+                this.options.column_width;
+            const y = 0;
 
             const width = this.options.column_width;
             const height =
@@ -1389,18 +1417,33 @@ class Gantt {
                     this.tasks.length +
                 this.options.header_height +
                 this.options.padding / 2;
+            createSVG('rect', {
+                x,
+                y,
+                width,
+                height,
+                class: 'today-highlight',
+                append_to: this.layers.grid
+            });
+        }
+    }
+
+    make_grid_highlights_with_weekends() {
+        if (this.view_is('Day')) {
+            const width = this.options.column_width;
+            const height =
+                (this.options.bar_height + this.options.padding) *
+                this.tasks.length;
+            const y = this.options.header_height + this.options.padding / 2;
             let x = 0;
 
             for (let date of this.dates) {
-                let y = this.options.header_height + this.options.padding / 2;
-
-                let isToday = date.toString() == date_utils.today();
-                let isWeekend = date.getDay() == 0 || date.getDay() == 6;
-                let className;
+                let isToday = date.toString() == date_utils.today(),
+                    isWeekend = date.getDay() == 0 || date.getDay() == 6,
+                    className = '';
 
                 if (isToday) {
                     className = 'today-highlight';
-                    y = (this.options.header_height + this.options.padding) / 2; // This is so the day highlight doesn't extend into the months header
                 } else if (isWeekend) {
                     className = 'weekend-highlight';
                 }
@@ -1417,17 +1460,8 @@ class Gantt {
                 }
                 x += this.options.column_width;
             }
-            // createSVG('rect', {
-            //     x,
-            //     y,
-            //     width,
-            //     height,
-            //     class: 'today-highlight',
-            //     append_to: this.layers.grid
-            // });
         }
     }
-
     make_dates() {
         for (let date of this.get_dates_to_draw()) {
             createSVG('text', {
