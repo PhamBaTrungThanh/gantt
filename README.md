@@ -1,6 +1,6 @@
 <div align="center">
     <img src="https://github.com/frappe/design/blob/master/logos/gantt-logo.svg" height="128">
-    <h2>Frappe Gantt</h2>
+    <h2>Frappe Gantt (Customized Version)</h2>
     <p align="center">
         <p>A simple, interactive, modern gantt chart library for the web</p>
         <a href="https://frappe.github.io/gantt">
@@ -16,18 +16,22 @@
 </p>
 
 ### Install
+
 ```
 npm install frappe-gantt
 ```
 
 ### Usage
+
 Include it in your HTML:
+
 ```
 <script src="frappe-gantt.min.js"></script>
 <link rel="stylesheet" href="frappe-gantt.css">
 ```
 
 And start hacking:
+
 ```js
 var tasks = [
   {
@@ -45,8 +49,9 @@ var gantt = new Gantt("#gantt", tasks);
 ```
 
 You can also pass various options to the Gantt constructor:
+
 ```js
-var gantt = new Gantt("#gantt", tasks, {
+var gantt = new Gantt('#gantt', tasks, {
     header_height: 50,
     column_width: 30,
     step: 24,
@@ -55,7 +60,7 @@ var gantt = new Gantt("#gantt", tasks, {
     bar_corner_radius: 3,
     arrow_curve: 5,
     padding: 18,
-    view_mode: 'Day',   
+    view_mode: 'Day',
     date_format: 'YYYY-MM-DD',
     custom_popup_html: null
 });
@@ -70,5 +75,7 @@ If you want to contribute:
 
 License: MIT
 
-------------------
+---
+
 Project maintained by [frappe](https://github.com/frappe)
+Customized by by [Phạm Bá Trung Thành](https://github.com/phambatrungthanh)
